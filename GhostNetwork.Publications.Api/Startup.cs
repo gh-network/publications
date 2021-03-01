@@ -132,7 +132,7 @@ namespace GhostNetwork.Publications.Api
 
         private string AzureConnectionString()
         {
-            return $"DefaultEndpointsProtocol=https;AccountName=ghnetwork;AccountKey=Du8mwc1C3xB8MhtgIu6GFLDYAVjS86nwbDI9U3NLgCqjbXHhjiHLeUvjFdD9l3alTIVtsuWrsFu7Jwe8GnYVuA==;EndpointSuffix=core.windows.net";
+            return $"DefaultEndpointsProtocol=https;";
         }
     }
 }

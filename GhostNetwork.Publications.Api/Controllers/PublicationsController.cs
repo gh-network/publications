@@ -152,6 +152,13 @@ namespace GhostNetwork.Publications.Api.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Upload image
+        /// </summary>
+        /// <param name="file">file</param>
+        /// <param name="id">publication id</param>
+        /// <response code="200">Returns publication wiht image url</response>
+        /// <response code="400">Publication not found or file is null</response>
         [HttpPost("upload/{id}")]
         [RequestSizeLimit(31457280)]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -178,12 +185,20 @@ namespace GhostNetwork.Publications.Api.Controllers
             return BadRequest("File is null");
         }
 
+        /// <summary>
+        /// Delete image url
+        /// </summary>
+        /// <param name="id">Publication id</param>
+        /// <response code="200">Image url now is null</response>
+        /// <response code="404">Publication not found or images url is null</response>
         [HttpDelete("delete/{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> DeleteImagesAsync([FromRoute] string id)
         {
-            if (await publicationService.GetByIdAsync(id) == null)
+            var publication = await publicationService.GetByIdAsync(id);
+
+            if (publication == null || publication.ImagesUrl == null)
             {
                 return NotFound();
             }
