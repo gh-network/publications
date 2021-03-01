@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
+using Azure.Storage.Blobs;
 using Domain.Validation;
 using GhostNetwork.Publications.Api.Helpers.OpenApi;
+using GhostNetwork.Publications.Azure;
+using GhostNetwork.Publications.AzureBlobStorage;
 using GhostNetwork.Publications.Comments;
 using GhostNetwork.Publications.MongoDb;
 using Microsoft.AspNetCore.Builder;
@@ -60,6 +63,10 @@ namespace GhostNetwork.Publications.Api
             services.AddScoped<ICommentsStorage, MongoCommentsStorage>();
             services.AddScoped<ICommentsService, CommentsService>();
             services.AddScoped(BuildCommentValidator);
+
+            services.AddSingleton(provider => new BlobStorageSettings(
+                new BlobServiceClient(AzureConnectionString()), "gh-network"));
+            services.AddSingleton<IImagesStorage, ImagesStorage>();
 
             services.AddControllers()
                 .AddJsonOptions(options =>
@@ -121,6 +128,11 @@ namespace GhostNetwork.Publications.Api
             }
 
             return new ValidatorsContainer<CommentContext>(validators.ToArray());
+        }
+
+        private string AzureConnectionString()
+        {
+            return $"DefaultEndpointsProtocol=https;AccountName=ghnetwork;AccountKey=Du8mwc1C3xB8MhtgIu6GFLDYAVjS86nwbDI9U3NLgCqjbXHhjiHLeUvjFdD9l3alTIVtsuWrsFu7Jwe8GnYVuA==;EndpointSuffix=core.windows.net";
         }
     }
 }

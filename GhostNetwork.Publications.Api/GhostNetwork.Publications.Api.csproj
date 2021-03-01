@@ -19,6 +19,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\GhostNetwork.Publications.Domain\GhostNetwork.Publications.Domain.csproj" />
+      <ProjectReference Include="..\Infrastructure\GhostNetwork.Publications.Azure\GhostNetwork.Publications.Azure.csproj" />
       <ProjectReference Include="..\Infrastructure\GhostNetwork.Publications.MongoDb\GhostNetwork.Publications.MongoDb.csproj" />
     </ItemGroup>
 

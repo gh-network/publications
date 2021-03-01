@@ -124,6 +124,34 @@ namespace GhostNetwork.Publications.MongoDb
             await context.Publications.DeleteOneAsync(filter);
         }
 
+        public async Task UpdateImagesUrlAsync(string id, string imagesUrl)
+        {
+            if (!ObjectId.TryParse(id, out var oId))
+            {
+                return;
+            }
+
+            var filter = Builders<PublicationEntity>.Filter.Eq(p => p.Id, oId);
+
+            var update = Builders<PublicationEntity>.Update.Set(s => s.ImagesUrl, imagesUrl);
+
+            await context.Publications.UpdateOneAsync(filter, update);
+        }
+
+        public async Task DeleteImagesUrlAsync(string id)
+        {
+            if (!ObjectId.TryParse(id, out var oId))
+            {
+                return;
+            }
+
+            var filter = Builders<PublicationEntity>.Filter.Eq(p => p.Id, oId);
+
+            var update = Builders<PublicationEntity>.Update.Set(s => s.ImagesUrl, null);
+
+            await context.Publications.UpdateOneAsync(filter, update);
+        }
+
         private static Publication ToDomain(PublicationEntity entity)
         {
             return new Publication(
@@ -132,7 +160,8 @@ namespace GhostNetwork.Publications.MongoDb
                 entity.Tags,
                 (UserInfo)entity.Author,
                 DateTimeOffset.FromUnixTimeMilliseconds(entity.CreateOn),
-                DateTimeOffset.FromUnixTimeMilliseconds(entity.UpdateOn));
+                DateTimeOffset.FromUnixTimeMilliseconds(entity.UpdateOn),
+                entity.ImagesUrl);
         }
     }
 }

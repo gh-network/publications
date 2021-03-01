@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using Domain;
 using Domain.Validation;
+using GhostNetwork.Publications.AzureBlobStorage;
 using GhostNetwork.Publications.Comments;
 
 namespace GhostNetwork.Publications
@@ -20,6 +22,10 @@ namespace GhostNetwork.Publications
         Task DeleteAsync(string id);
 
         Task<(IEnumerable<Publication>, long)> SearchByAuthor(int skip, int take, Guid authorId, Ordering order);
+
+        Task<DomainResult> UpdateImagesAsync(string id, Stream stream, string extension);
+
+        Task<DomainResult> DeleteImagesAsync(string id);
     }
 
     public class PublicationService : IPublicationService
@@ -28,17 +34,20 @@ namespace GhostNetwork.Publications
         private readonly IPublicationsStorage publicationStorage;
         private readonly ICommentsStorage commentStorage;
         private readonly IHashTagsFetcher hashTagsFetcher;
+        private readonly IImagesStorage imagesStorage;
 
         public PublicationService(
             IValidator<PublicationContext> validator,
             IPublicationsStorage publicationStorage,
             ICommentsStorage commentStorage,
-            IHashTagsFetcher hashTagsFetcher)
+            IHashTagsFetcher hashTagsFetcher,
+            IImagesStorage imagesStorage)
         {
             this.validator = validator;
             this.publicationStorage = publicationStorage;
             this.commentStorage = commentStorage;
             this.hashTagsFetcher = hashTagsFetcher;
+            this.imagesStorage = imagesStorage;
         }
 
         public async Task<Publication> GetByIdAsync(string id)
@@ -88,6 +97,12 @@ namespace GhostNetwork.Publications
 
         public async Task DeleteAsync(string id)
         {
+            var publication = await publicationStorage.FindOneByIdAsync(id);
+            if (publication.ImagesUrl != null)
+            {
+                await imagesStorage.DeleteImagesAsync(publication.ImagesUrl);
+            }
+
             await commentStorage.DeleteByPublicationAsync(id);
             await publicationStorage.DeleteOneAsync(id);
         }
@@ -95,6 +110,38 @@ namespace GhostNetwork.Publications
         public async Task<(IEnumerable<Publication>, long)> SearchByAuthor(int skip, int take, Guid authorId, Ordering order)
         {
             return await publicationStorage.FindManyByAuthorAsync(skip, take, authorId, order);
+        }
+
+        public async Task<DomainResult> UpdateImagesAsync(string id, Stream stream, string extension)
+        {
+            var publication = await publicationStorage.FindOneByIdAsync(id);
+            if (publication == null)
+            {
+                return DomainResult.Error("Publication not found.");
+            }
+
+            var fileName = Guid.NewGuid() + extension;
+            stream.Position = 0;
+
+            var imagesUrl = await imagesStorage.UploadImagesAsync(stream, fileName);
+            if (publication.ImagesUrl != null)
+            {
+                return DomainResult.Error("Images is exist");
+            }
+
+            await publicationStorage.UpdateImagesUrlAsync(id, imagesUrl);
+            return DomainResult.Success();
+        }
+
+        public async Task<DomainResult> DeleteImagesAsync(string id)
+        {
+            var publication = await publicationStorage.FindOneByIdAsync(id);
+
+            await imagesStorage.DeleteImagesAsync(publication.ImagesUrl);
+
+            await publicationStorage.DeleteImagesUrlAsync(id);
+
+            return DomainResult.Success();
         }
     }
 }

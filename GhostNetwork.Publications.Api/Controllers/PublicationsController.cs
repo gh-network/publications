@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.Threading.Tasks;
 using GhostNetwork.Publications.Api.Helpers;
 using GhostNetwork.Publications.Api.Models;
@@ -147,6 +148,47 @@ namespace GhostNetwork.Publications.Api.Controllers
             }
 
             await publicationService.DeleteAsync(id);
+
+            return Ok();
+        }
+
+        [HttpPost("upload/{id}")]
+        [RequestSizeLimit(31457280)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status413PayloadTooLarge)]
+        public async Task<ActionResult> UploadImagesAsync(IFormFile file, [FromRoute] string id)
+        {
+            if (file != null)
+            {
+                await using (var memoryStream = new MemoryStream())
+                {
+                    await file.CopyToAsync(memoryStream);
+                    var extension = Path.GetExtension(file.FileName);
+                    var result = await publicationService.UpdateImagesAsync(id, memoryStream, extension);
+                    if (result.Successed)
+                    {
+                        return Ok(await publicationService.GetByIdAsync(id));
+                    }
+
+                    return BadRequest(result.ToProblemDetails());
+                }
+            }
+
+            return BadRequest("File is null");
+        }
+
+        [HttpDelete("delete/{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> DeleteImagesAsync([FromRoute] string id)
+        {
+            if (await publicationService.GetByIdAsync(id) == null)
+            {
+                return NotFound();
+            }
+
+            await publicationService.DeleteImagesAsync(id);
 
             return Ok();
         }
